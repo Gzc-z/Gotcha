@@ -1,13 +1,13 @@
-build-client:
-	@go build -o client.o client/client.go
-build-server:
-	@go build -o server.o server/server.go
 
-s: build-server
-	@./server.o
+build:
+	@go build -o client.o bin/client.go
+	@go build -o server.o bin/server.go
 
-c: build-client
-	@./client.o
+s: # server
+	@bin/server.o
+
+c: # client
+	@bin/client.o
 
 clean:
-	rm -f server.o client.o
+	rm -f bin client.o
