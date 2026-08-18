@@ -9,11 +9,13 @@ import (
 	"net"
 	"os"
 
-	"prototype/user"
+	"gochat/src/user"
 
 	"github.com/google/uuid"
 	"go.yaml.in/yaml/v3"
 )
+
+var userConfig = "src/userConf.yaml"
 
 type Config struct {
 	User *user.User
@@ -23,7 +25,7 @@ type Config struct {
 }
 
 func getConfig() Config {
-	data, err := os.ReadFile("config.yaml")
+	data, err := os.ReadFile(userConfig)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -58,7 +60,7 @@ func SendMessage(conf Config) {
 
 	for scanner.Scan() {
 		msg := fmt.Sprintf("%s: %s", conf.User.Name, scanner.Text())
-		fmt.Fprint(conf.Conn, msg)
+		fmt.Fprintln(conf.Conn, msg)
 	}
 	fmt.Fprintln(conf.Conn, conf.User.Name+" - disconected")
 }
@@ -72,8 +74,6 @@ func main() {
 	defer conn.Close()
 
 	config.Conn = conn
-	// config.User = &user.User{}
-
 	data, err := json.Marshal(config.User)
 	if err != nil {
 		log.Fatalln(err)

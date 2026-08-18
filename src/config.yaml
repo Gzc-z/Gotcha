@@ -1,4 +1,4 @@
-host:
-port:
-name:
+host: # host ip
+port: # default port 3000
+name: # your name
 

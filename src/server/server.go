@@ -8,7 +8,7 @@ import (
 	"log"
 	"net"
 
-	"prototype/user"
+	"gochat/src/user"
 )
 
 var users []net.Conn
