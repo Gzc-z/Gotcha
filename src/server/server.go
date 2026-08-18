@@ -11,7 +11,11 @@ import (
 	"gochat/src/user"
 )
 
-var users []net.Conn
+var (
+	users       []net.Conn
+	nameSize    uint32 = 100
+	messageSize uint32 = 2048
+)
 
 func SendMessages(user net.Conn, input *bufio.Scanner) {
 	for i := range users {
@@ -22,31 +26,35 @@ func SendMessages(user net.Conn, input *bufio.Scanner) {
 	}
 }
 
-var messageSize uint32 = 2048
-
 func handleConn(conn net.Conn) {
 	defer conn.Close()
 
 	users = append(users, conn)
 
 	var user user.User
-	data := make([]byte, 200)
 
-	n, err := conn.Read(data)
-	if err != nil {
-		log.Fatalln(err)
+	input := bufio.NewScanner(conn)
+	input.Buffer(
+		make([]byte, nameSize),
+		int(nameSize),
+	)
+	if !input.Scan() {
+		if err := input.Err(); err != nil {
+			log.Println("erro lendo conexão:", err)
+		}
+		return
 	}
-	err = json.Unmarshal(data[:n], &user)
+	// must accept valid structs like user
+	// TODO: validate user
+	err := json.Unmarshal([]byte(input.Text()), &user)
 	if err != nil {
-		log.Fatalln("possivel argumentos fora do range")
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
 
 	// json.Unmarshal([]byte(input.Text()), &user)
 	fmt.Println("nova conexão no servidor:", user.Name)
 	defer fmt.Printf("- %s foi embora\n", user.Name)
 
-	input := bufio.NewScanner(conn)
 	for input.Scan() {
 		SendMessages(conn, input)
 	}

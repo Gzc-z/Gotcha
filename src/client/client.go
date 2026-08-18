@@ -79,8 +79,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	_, err = config.Conn.Write(data)
-	if err != nil {
+	writer := bufio.NewWriter(conn)
+	fmt.Fprintln(writer, string(data))
+	if err := writer.Flush(); err != nil {
 		log.Fatalln(err)
 	}
 
