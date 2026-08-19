@@ -15,7 +15,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-var userConfig = "src/userConf.yaml"
+var userConfig = "src/user.yaml"
 
 type Config struct {
 	User *user.User

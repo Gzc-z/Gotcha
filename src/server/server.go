@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 
 	"gochat/src/user"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -17,7 +20,7 @@ var (
 	messageSize uint32 = 2048
 )
 
-func SendMessages(user net.Conn, input *bufio.Scanner) {
+func sendMessages(user net.Conn, input *bufio.Scanner) {
 	for i := range users {
 		if users[i] == user {
 			continue
@@ -26,41 +29,59 @@ func SendMessages(user net.Conn, input *bufio.Scanner) {
 	}
 }
 
+func httpHandler(conn net.Conn) {
+	// oh gosh
+	msg := "não podi se conectar via navegador"
+	response := fmt.Sprintf("HTTP/1.1 200 OK\r\n"+
+		"Content-Type: text/plain; charset=utf-8\r\n"+
+		"Content-Length: %d\r\n"+
+		"\r\n%s\n",
+		len(msg),
+		msg,
+	)
+	conn.Write([]byte(response))
+}
+
 func handleConn(conn net.Conn) {
 	defer conn.Close()
 
 	users = append(users, conn)
 
-	var user user.User
-
-	input := bufio.NewScanner(conn)
-	input.Buffer(
+	scanner := bufio.NewScanner(conn)
+	scanner.Buffer(
 		make([]byte, nameSize),
 		int(nameSize),
 	)
-	if !input.Scan() {
-		if err := input.Err(); err != nil {
-			log.Println("erro lendo conexão:", err)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			log.Println("erro lendo scanners:", err)
 		}
 		return
 	}
-	// must accept valid structs like user
-	// TODO: validate user
-	err := json.Unmarshal([]byte(input.Text()), &user)
-	if err != nil {
-		fmt.Println(err)
+	userMetadata := scanner.Text() // i don't think i should use this
+
+	if strings.Contains(scanner.Text(), "GET /") {
+		httpHandler(conn)
+		return
 	}
 
-	// json.Unmarshal([]byte(input.Text()), &user)
-	fmt.Println("nova conexão no servidor:", user.Name)
+	var user user.User
+	err := json.Unmarshal([]byte(userMetadata), &user)
+	if err != nil {
+		user.Name = "default-user-" + uuid.New().String()[0:8]
+		user.ID = uuid.New()
+		msg := "WARN: don't find user metadata, using default user"
+		fmt.Printf("\033[1;33m%s\033[0m", msg)
+	}
 	defer fmt.Printf("- %s foi embora\n", user.Name)
 
-	for input.Scan() {
-		SendMessages(conn, input)
+	fmt.Println("nova conexão no servidor:", user.Name)
+
+	for scanner.Scan() {
+		sendMessages(conn, scanner)
 	}
 }
 
-// TODO do a whitelist, use dns and verify if a connection of ip contains in a whitelist
 func main() {
 	PORT := 3000
 
